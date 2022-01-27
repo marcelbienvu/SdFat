@@ -248,13 +248,11 @@ bool ExFatFile::openPrivate(ExFatFile* dir, ExName_t* fname, oflag_t oflag) {
   uint8_t freeCount = 0;
   uint8_t freeNeed = 3;
   bool inSet = false;
-
   // error if already open, no access mode, or no directory.
   if (isOpen() || !dir->isDir()) {
     DBG_FAIL_MACRO;
     goto fail;
   }
-
   switch (oflag & O_ACCMODE) {
     case O_RDONLY:
       modeFlags = FILE_FLAG_READ;
@@ -541,11 +539,12 @@ int ExFatFile::read(void* buf, size_t count) {
   uint16_t sectorOffset;
   uint32_t sector;
   uint32_t clusterOffset;
-
+  //Serial.print("Start Reading\t");
   if (!isReadable()) {
     DBG_FAIL_MACRO;
     goto fail;
   }
+
   if (isContiguous() || isFile()) {
     if ((m_curPosition + count) > m_validLength) {
       count = toRead = m_validLength - m_curPosition;
@@ -584,6 +583,7 @@ int ExFatFile::read(void* buf, size_t count) {
       if (n > toRead) {
         n = toRead;
       }
+      //Serial.print("Cache Prepare\t");
       // read sector to cache and copy data to caller
       cache = m_vol->dataCachePrepare(sector, FsCache::CACHE_FOR_READ);
       if (!cache) {
@@ -594,6 +594,7 @@ int ExFatFile::read(void* buf, size_t count) {
       memcpy(dst, src, n);
 #if USE_MULTI_SECTOR_IO
     } else if (toRead >= 2*m_vol->bytesPerSector()) {
+      //Serial.print("Cache Read Multi\t");
       uint32_t ns = toRead >> m_vol->bytesPerSectorShift();
       // Limit reads to current cluster.
       uint32_t maxNs = m_vol->sectorsPerCluster()
@@ -608,6 +609,7 @@ int ExFatFile::read(void* buf, size_t count) {
       }
 #endif  // USE_MULTI_SECTOR_IO
     } else {
+      //Serial.print("Cache Read Simple\t");
       // read single sector
       n = m_vol->bytesPerSector();
       if (!m_vol->cacheSafeRead(sector, dst)) {

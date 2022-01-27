@@ -143,6 +143,8 @@ const uint8_t CMD13 = 0X0D;
 const uint8_t CMD17 = 0X11;
 /** READ_MULTIPLE_SECTOR - read multiple data sectors from the card */
 const uint8_t CMD18 = 0X12;
+/** SEND_TUNING_PATTERN - Send Tuning Block */
+const uint8_t CMD19 = 0x13;
 /** WRITE_SECTOR - write a single data sector to the card */
 const uint8_t CMD24 = 0X18;
 /** WRITE_MULTIPLE_SECTOR - write sectors of data until a STOP_TRANSMISSION */

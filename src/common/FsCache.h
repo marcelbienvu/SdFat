@@ -69,7 +69,8 @@ class FsCache {
       memcpy(dst, m_buffer, 512);
       return true;
     }
-    return m_blockDev->readSector(sector, dst);
+    return m_blockDev->readSectorNonBlocking(sector, dst);
+    //return m_blockDev->readSector(sector, dst);
   }
   /**
    * Cache safe read of multiple sectors.
@@ -83,7 +84,8 @@ class FsCache {
     if (isCached(sector, count) && !sync()) {
       return false;
     }
-    return m_blockDev->readSectors(sector, dst, count);
+    return m_blockDev->readSectorsNonBlocking(sector, dst, count);
+    //return m_blockDev->readSectors(sector, dst, count);
   }
   /**
    * Cache safe write of a sectors.
@@ -96,7 +98,8 @@ class FsCache {
     if (isCached(sector)) {
       invalidate();
     }
-    return m_blockDev->writeSector(sector, src);
+    return m_blockDev->writeSectorNonBlocking(sector, src);
+    //return m_blockDev->writeSector(sector, src);
   }
   /**
    * Cache safe write of multiple sectors.
@@ -110,7 +113,8 @@ class FsCache {
      if (isCached(sector, count)) {
       invalidate();
     }
-    return m_blockDev->writeSectors(sector, src, count);
+    return m_blockDev->writeSectorsNonBlocking(sector, src, count);
+    //return m_blockDev->writeSectors(sector, src, count);
   }
   /** \return Clear the cache and returns a pointer to the cache. */
   uint8_t* clear() {

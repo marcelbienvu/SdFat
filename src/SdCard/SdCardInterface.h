@@ -48,6 +48,8 @@ class SdCardInterface : public FsBlockDeviceInterface {
   virtual uint32_t errorData() const = 0;
   /** \return true if card is busy. */
   virtual bool isBusy() = 0;
+    /** \return true if card is busy. */
+  virtual bool isBusyAdma() = 0;
   /** \return false by default */
   virtual bool hasDedicatedSpi() {return false;}
   /** \return false by default */

@@ -331,6 +331,10 @@ bool SharedSpiCard::isBusy() {
   return rtn;
 }
 //------------------------------------------------------------------------------
+bool SharedSpiCard::isBusyAdma() {
+  return isBusy(); //not implemented
+}
+//------------------------------------------------------------------------------
 bool SharedSpiCard::readData(uint8_t* dst) {
   return readData(dst, 512);
 }
@@ -444,6 +448,14 @@ bool SharedSpiCard::readSectors(uint32_t sector, uint8_t* dst, size_t ns) {
   return readStop();
  fail:
   return false;
+}
+//------------------------------------------------------------------------------
+bool SharedSpiCard::readSectorNonBlocking(uint32_t sector, uint8_t* dst) {
+  return readSector(sector, dst); //not implemented
+}
+//------------------------------------------------------------------------------
+bool SharedSpiCard::readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) {
+  return readSectors(sector, dst, ns); //not implemented
 }
 //------------------------------------------------------------------------------
 bool SharedSpiCard::readStart(uint32_t sector) {
@@ -629,6 +641,14 @@ bool SharedSpiCard::writeSectors(uint32_t sector,
   return false;
 }
 //------------------------------------------------------------------------------
+bool SharedSpiCard::writeSectorNonBlocking(uint32_t sector, const uint8_t* src) {
+  return writeSector(sector, src); // not implemented
+}
+//------------------------------------------------------------------------------
+bool SharedSpiCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) {
+  return writeSectors(sector, src, ns); // not implemented
+}
+//------------------------------------------------------------------------------
 bool SharedSpiCard::writeStart(uint32_t sector) {
   // use address if not SDHC card
   if (type() != SD_CARD_TYPE_SDHC) {
@@ -693,6 +713,14 @@ bool DedicatedSpiCard::readSectors(
   return false;
 }
 //------------------------------------------------------------------------------
+bool DedicatedSpiCard::readSectorNonBlocking(uint32_t sector, uint8_t* dst) {
+  return readSector(sector, dst); //not implemented
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) {
+  return readSectors(sector, dst, ns); //not implemented
+}
+//------------------------------------------------------------------------------
 bool DedicatedSpiCard::setDedicatedSpi(bool value) {
   if (!syncDevice()) {
     return false;
@@ -726,4 +754,12 @@ bool DedicatedSpiCard::writeSectors(
 
 fail:
   return false;
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::writeSectorNonBlocking(uint32_t sector, const uint8_t* src) {
+  return writeSector(sector, src);
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) {
+  return writeSectors(sector, src, ns); // Not implemented 
 }

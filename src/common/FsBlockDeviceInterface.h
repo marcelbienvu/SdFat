@@ -47,6 +47,12 @@ class FsBlockDeviceInterface {
    */
   virtual bool isBusy() = 0;
   /**
+   * Check for FsBlockDevice Adma related busy.
+   *
+   * \return true if busy else false.
+   */
+  virtual bool isBusyAdma() = 0;  
+  /**
    * Read a sector.
    *
    * \param[in] sector Logical sector to be read.
@@ -54,7 +60,6 @@ class FsBlockDeviceInterface {
    * \return true for success or false for failure.
    */
   virtual bool readSector(uint32_t sector, uint8_t* dst) = 0;
-
   /**
    * Read multiple sectors.
    *
@@ -64,7 +69,23 @@ class FsBlockDeviceInterface {
    * \return true for success or false for failure.
    */
   virtual bool readSectors(uint32_t sector, uint8_t* dst, size_t ns) = 0;
-
+  /**
+   * Non-Blocking Read a 512 byte sector from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  virtual bool readSectorNonBlocking(uint32_t sector, uint8_t* dst) = 0;
+  /**
+   * Non-Blocking Read multiple 512 byte sectors from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  virtual bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) = 0;
   /** \return device size in sectors. */
   virtual uint32_t sectorCount() = 0;
 
@@ -91,5 +112,22 @@ class FsBlockDeviceInterface {
    * \return true for success or false for failure.
    */
   virtual bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns) = 0;
+  /**
+   * Non-Blocking Writes a 512 byte sector to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  virtual bool writeSectorNonBlocking(uint32_t sector, const uint8_t* src) = 0;
+  /**
+   * Non Blocking Write multiple 512 byte sectors to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] ns Number of sectors to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  virtual bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) = 0;
 };
 #endif  // FsBlockDeviceInterface_h

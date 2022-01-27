@@ -170,6 +170,12 @@ class FatPartition {
    * \return true if busy else false.
    */
   bool isBusy() {return m_blockDev->isBusy();}
+  /**
+   * Check for FsBlockDevice ADMA busy.
+   *
+   * \return true if busy else false.
+   */
+  bool isBusyAdma() {return m_blockDev->isBusyAdma();}
   //----------------------------------------------------------------------------
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
   bool dmpDirSector(print_t* pr, uint32_t sector);

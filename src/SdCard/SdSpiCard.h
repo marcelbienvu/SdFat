@@ -108,6 +108,12 @@ class SharedSpiCard {
    * \return true if busy else false.
    */
   bool isBusy();
+  /**
+   * Check for busy ADMA transfer.
+   *
+   * \return true if busy else false.
+   */
+  bool isBusyAdma();
   /** \return false, can't be in dedicated state. */
   bool isDedicatedSpi() {return false;}
   /**
@@ -163,7 +169,23 @@ class SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool readSectors(uint32_t sector, uint8_t* dst, size_t ns);
-
+  /**
+   * Non-Blocking Read a 512 byte sector from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorNonBlocking(uint32_t sector, uint8_t* dst);
+  /**
+   * Non-Blocking Read multiple 512 byte sectors from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
   /** Start a read multiple sector sequence.
    *
    * \param[in] sector Address of first sector in sequence.
@@ -235,6 +257,23 @@ class SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns);
+  /**
+   * Non-Blocking Writes a 512 byte sector to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorNonBlocking(uint32_t sector, const uint8_t* src);
+  /**
+   * Non Blocking Write multiple 512 byte sectors to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] ns Number of sectors to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);  
   /** Write one data sector in a multiple sector write sequence.
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.
@@ -381,6 +420,23 @@ class DedicatedSpiCard : public SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool readSectors(uint32_t sector, uint8_t* dst, size_t ns);
+  /**
+   * Non-Blocking Read a 512 byte sector from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorNonBlocking(uint32_t sector, uint8_t* dst);
+  /**
+   * Non-Blocking Read multiple 512 byte sectors from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
   /** Set SPI sharing state
    * \param[in] value desired state.
    * \return true for success else false;
@@ -403,6 +459,23 @@ class DedicatedSpiCard : public SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns);
+  /**
+   * Non-Blocking Writes a 512 byte sector to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorNonBlocking(uint32_t sector, const uint8_t* src);
+  /**
+   * Non Blocking Write multiple 512 byte sectors to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] ns Number of sectors to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);
 
  private:
   uint32_t m_curSector;

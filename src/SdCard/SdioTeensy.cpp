@@ -62,6 +62,24 @@ const uint32_t SDHC_IRQSIGEN_MASK =
                SDHC_IRQSIGEN_CEBEIEN | SDHC_IRQSIGEN_CCEIEN |
                SDHC_IRQSIGEN_CTOEIEN | SDHC_IRQSIGEN_TCIEN;
 //==============================================================================
+#define ADMA2_DESCRIPTOR_LENGTH_SHIFT           16U
+#define ADMA2_DESCRIPTOR_MAX_LENGTH_PER_ENTRY   0xFFFFUL
+#define ADMA2_DESCRIPTOR_BUFFER_SIZE            32U
+#define ADMA2_DESCRIPTOR_BUFFER_ALIGN_SIZE      4U
+#define ADMA2_DESCRIPTOR_END_FLAG               1U << 1U
+#define ADMA2_DESCRIPTOR_ACTIVITY2_FLAG         0x20
+#define ADMA2_DESCRIPTOR_TRANSFER_FLAG          0x21
+
+#define ADMA2_LENGTH_ALIGN                    4U
+#define SDHC_PROCTL_DMAS_MASK                 0x300U
+
+struct Adma2_Descriptor {
+    uint32_t attribute;                     /*!< The control and status field */
+    const uint32_t *address;                /*!< The address field */
+};
+
+static uint32_t HostDmaBuffer[ADMA2_DESCRIPTOR_BUFFER_SIZE] __attribute__((aligned(ADMA2_DESCRIPTOR_BUFFER_ALIGN_SIZE)));                
+//==============================================================================
 const uint32_t CMD_RESP_NONE = SDHC_XFERTYP_RSPTYP(0);
 
 const uint32_t CMD_RESP_R1 = SDHC_XFERTYP_CICEN | SDHC_XFERTYP_CCCEN |
@@ -163,6 +181,8 @@ const uint32_t CMD18_DMA_XFERTYP = SDHC_XFERTYP_CMDINX(CMD18) | CMD_RESP_R1 |
 const uint32_t CMD18_PGM_XFERTYP = SDHC_XFERTYP_CMDINX(CMD18) | CMD_RESP_R1 |
                                    DATA_READ_MULTI_PGM;
 
+const uint32_t CMD19_XFERTYP = SDHC_XFERTYP_CMDINX(CMD19) | CMD_RESP_R1;
+
 const uint32_t CMD24_DMA_XFERTYP = SDHC_XFERTYP_CMDINX(CMD24) | CMD_RESP_R1 |
                                    DATA_WRITE_DMA;
 
@@ -193,6 +213,8 @@ static void setSdclk(uint32_t kHzMax);
 static bool yieldTimeout(bool (*fcn)());
 static bool waitDmaStatus();
 static bool waitTimeout(bool (*fcn)());
+static bool rdWrSectors(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n);
+static bool rdWrSectorsNonBlocking(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n);
 //------------------------------------------------------------------------------
 static bool (*m_busyFcn)() = 0;
 static bool m_initDone = false;
@@ -209,8 +231,11 @@ static uint32_t m_ocr;
 static cid_t m_cid;
 static csd_t m_csd;
 //==============================================================================
+bool isAdma = false;
+static void setIsAdma(bool enable) {isAdma = enable;}
+//==============================================================================
 #define DBG_TRACE Serial.print("TRACE."); Serial.println(__LINE__); delay(200);
-#define USE_DEBUG_MODE 0
+#define USE_DEBUG_MODE 1
 #if USE_DEBUG_MODE
 #define DBG_IRQSTAT() if (SDHC_IRQSTAT) {Serial.print(__LINE__);\
         Serial.print(" IRQSTAT "); Serial.println(SDHC_IRQSTAT, HEX);}
@@ -254,6 +279,8 @@ static void printRegs(uint32_t line) {
   Serial.print((proctl >>4) & 3);
   Serial.print(" DWT");
   Serial.print((proctl >>1) & 3);
+  Serial.print(" DMA");
+  Serial.print((proctl >> 8) & 3);
   Serial.println();
   Serial.print("IRQSTAT ");
   Serial.print(irqstat, HEX);
@@ -281,12 +308,14 @@ inline bool setSdErrorCode(uint8_t code, uint32_t line) {
 // ISR
 static void sdIrs() {
   SDHC_IRQSIGEN = 0;
+  
   m_irqstat = SDHC_IRQSTAT;
   SDHC_IRQSTAT = m_irqstat;
+
+  m_dmaBusy = false;
 #if defined(__IMXRT1062__)
   SDHC_MIX_CTRL &= ~(SDHC_MIX_CTRL_AC23EN | SDHC_MIX_CTRL_DMAEN);
 #endif
-  m_dmaBusy = false;
 }
 //==============================================================================
 // GPIO and clock functions.
@@ -393,11 +422,12 @@ static bool cardCommand(uint32_t xfertyp, uint32_t arg) {
 #endif  // defined(__IMXRT1062__)
   SDHC_XFERTYP = xfertyp;
   if (waitTimeout(isBusyCommandComplete)) {
+    //Serial.println("Timeout");
     return false;  // Caller will set errorCode.
   }
   m_irqstat = SDHC_IRQSTAT;
   SDHC_IRQSTAT = m_irqstat;
-
+  //Serial.print("XFERTYP sent\n");
   return (m_irqstat & SDHC_IRQSTAT_CC) &&
          !(m_irqstat & SDHC_IRQSTAT_CMD_ERROR);
 }
@@ -495,23 +525,7 @@ static bool isBusyTransferComplete() {
   return !(SDHC_IRQSTAT & (SDHC_IRQSTAT_TC | SDHC_IRQSTAT_ERROR));
 }
 //------------------------------------------------------------------------------
-static bool rdWrSectors(uint32_t xfertyp,
-                       uint32_t sector, uint8_t* buf, size_t n) {
-  if ((3 & (uint32_t)buf) || n == 0) {
-    return sdError(SD_CARD_ERROR_DMA);
-  }
-  if (yieldTimeout(isBusyCMD13)) {
-    return sdError(SD_CARD_ERROR_CMD13);
-  }
-  enableDmaIrs();
-  SDHC_DSADDR  = (uint32_t)buf;
-  SDHC_BLKATTR = SDHC_BLKATTR_BLKCNT(n) | SDHC_BLKATTR_BLKSIZE(512);
-  SDHC_IRQSIGEN = SDHC_IRQSIGEN_MASK;
-  if (!cardCommand(xfertyp, m_highCapacity ? sector : 512*sector)) {
-    return false;
-  }
-  return waitDmaStatus();
-}
+
 //------------------------------------------------------------------------------
 // Read 16 byte CID or CSD register.
 static bool readReg16(uint32_t xfertyp, void* data) {
@@ -708,13 +722,12 @@ bool SdioCard::begin(SdioConfig sdioConfig) {
   uint8_t status[64];
   if (cardCMD6(0X00FFFFFF, status) && (2 & status[13]) &&
       cardCMD6(0X80FFFFF1, status) && (status[16] & 0XF) == 1) {
-    kHzSdClk = 50000;
+    kHzSdClk = 100000;
   } else {
     kHzSdClk = 25000;
   }
   // Disable GPIO.
   enableGPIO(false);
-
   // Set the SDHC SCK frequency.
   setSdclk(kHzSdClk);
 
@@ -768,6 +781,12 @@ uint32_t SdioCard::errorData() const {
 //------------------------------------------------------------------------------
 uint32_t SdioCard::errorLine() const {
   return m_errorLine;
+}
+//------------------------------------------------------------------------------
+bool SdioCard::isBusyAdma() {
+  if(m_dmaBusy && !(SDHC_IRQSTAT & (SDHC_IRQSTAT_TC | SDHC_IRQSTAT_ERROR))) return true;
+  setIsAdma(false);
+  return false;
 }
 //------------------------------------------------------------------------------
 bool SdioCard::isBusy() {
@@ -844,6 +863,7 @@ bool SdioCard::readOCR(uint32_t* ocr) {
 }
 //------------------------------------------------------------------------------
 bool SdioCard::readSector(uint32_t sector, uint8_t* dst) {
+  //Serial.println("readSector Blocking");  
   if (m_sdioConfig.useDma()) {
     uint8_t aligned[512];
 
@@ -885,6 +905,7 @@ bool SdioCard::readSector(uint32_t sector, uint8_t* dst) {
 }
 //------------------------------------------------------------------------------
 bool SdioCard::readSectors(uint32_t sector, uint8_t* dst, size_t n) {
+  //Serial.println("readSectors Blocking");
   if (m_sdioConfig.useDma()) {
     if ((uint32_t)dst & 3) {
       for (size_t i = 0; i < n; i++, sector++, dst += 512) {
@@ -903,6 +924,77 @@ bool SdioCard::readSectors(uint32_t sector, uint8_t* dst, size_t n) {
         return false;
       }
     }
+  }
+  return true;
+}
+//------------------------------------------------------------------------------
+bool SetAdma2TableConfig(uint32_t *table, uint32_t tableWords, const uint32_t *data, uint32_t dataBytes) {
+    const uint32_t *startAddress = data;
+    uint32_t entries;
+    uint32_t i;
+
+    Adma2_Descriptor *adma2EntryAddress;
+
+    if (table == NULL || tableWords == 0UL || data == NULL || dataBytes == 0UL) {
+        return false;
+    }
+    else if (((uint32_t)startAddress % ADMA2_LENGTH_ALIGN) != 0UL) {
+        return false;
+    } else {
+        if (dataBytes % sizeof(uint32_t) != 0U) {
+            dataBytes += sizeof(uint32_t) - (dataBytes % sizeof(uint32_t)); /* make the data length as word-aligned */
+        }
+        entries = ((dataBytes / ADMA2_DESCRIPTOR_MAX_LENGTH_PER_ENTRY) + 1U);
+        if (entries > ((tableWords * sizeof(uint32_t)) / sizeof(Adma2_Descriptor))) {                                           // TODO sizeof() !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            return false;
+        } else {
+                adma2EntryAddress = (Adma2_Descriptor*)(uint32_t)(table);
+                for (i = 0; i < entries; i++) {
+                    /* Each descriptor for ADMA2 is 64-bit in length */
+                    if ((dataBytes - ((uint32_t)startAddress - (uint32_t)data)) <= ADMA2_DESCRIPTOR_MAX_LENGTH_PER_ENTRY) {
+                        /* The last piece of data, setting end flag in descriptor */
+                        adma2EntryAddress[i].address   = startAddress;
+                        adma2EntryAddress[i].attribute = ((dataBytes - ((uint32_t)startAddress - (uint32_t)data)) << ADMA2_DESCRIPTOR_LENGTH_SHIFT);
+                        adma2EntryAddress[i].attribute |= ADMA2_DESCRIPTOR_TRANSFER_FLAG | ADMA2_DESCRIPTOR_END_FLAG;
+                    } else {
+                        adma2EntryAddress[i].address = startAddress;
+                        adma2EntryAddress[i].attribute = (((ADMA2_DESCRIPTOR_MAX_LENGTH_PER_ENTRY / sizeof(uint32_t)) * sizeof(uint32_t)) << ADMA2_DESCRIPTOR_LENGTH_SHIFT);
+                        adma2EntryAddress[i].attribute |= ADMA2_DESCRIPTOR_TRANSFER_FLAG;
+                        startAddress += (ADMA2_DESCRIPTOR_MAX_LENGTH_PER_ENTRY / sizeof(uint32_t));
+                    }
+                    //Serial.printf("\t\t________________________________________________________________\n");
+                    //Serial.printf("\t\t|      Attribute field      |   Length field   | Address field |\n");
+                    //Serial.printf("\t\t|Valid|End|Int|x|Act 1|Act 2|   16bit length   | 32-bit length |\n");
+                    //Serial.printf("\t\t|  %u  | %u | %u |x|  %u  |  %u  |", bitRead(adma2EntryAddress[i].attribute, 0), bitRead(adma2EntryAddress[i].attribute, 1), bitRead(adma2EntryAddress[i].attribute, 2), bitRead(adma2EntryAddress[i].attribute, 4), bitRead(adma2EntryAddress[i].attribute, 5));
+                    //Serial.printf("       %u       |   %u   |\n", adma2EntryAddress[i].attribute >> 16, adma2EntryAddress[i].address);                
+                }
+                SDHC_DSADDR  = 0U;
+                SDHC_ADSADDR = (uint32_t)table;
+            }       
+    }
+    return true;
+}
+//------------------------------------------------------------------------------
+static void admaEnable(bool enable) {
+  if(enable) {
+    SDHC_PROCTL |= SDHC_PROCTL_DMAS(2);
+  } else {
+    SDHC_PROCTL &= ~SDHC_PROCTL_DMAS_MASK;
+  }
+}
+//------------------------------------------------------------------------------
+bool SdioCard::readSectorNonBlocking(uint32_t sector, uint8_t* dst) {
+  //Serial.print("readSectorNonBlocking\t");
+  if (!rdWrSectorsNonBlocking(CMD17_DMA_XFERTYP, sector, dst, 1)) {
+      return sdError(SD_CARD_ERROR_CMD17);
+  }
+  return true;
+}
+//------------------------------------------------------------------------------
+bool SdioCard::readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) {
+  //Serial.print("readSectorsNonBlocking\t");
+  if (!rdWrSectorsNonBlocking(CMD18_DMA_XFERTYP, sector, dst, ns)) {
+      return sdError(SD_CARD_ERROR_CMD18);
   }
   return true;
 }
@@ -1063,6 +1155,22 @@ bool SdioCard::writeSectors(uint32_t sector, const uint8_t* src, size_t n) {
   return true;
 }
 //------------------------------------------------------------------------------
+bool SdioCard::writeSectorNonBlocking(uint32_t sector, const uint8_t* src) {
+  uint8_t* ptr = const_cast<uint8_t*>(src);
+  if (!rdWrSectorsNonBlocking(CMD24_DMA_XFERTYP, sector, ptr, 1)) {
+      return sdError(SD_CARD_ERROR_CMD17);
+  }  
+  return true;
+}
+//------------------------------------------------------------------------------
+bool SdioCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) {
+  uint8_t* ptr = const_cast<uint8_t*>(src);
+  if (!rdWrSectorsNonBlocking(CMD25_DMA_XFERTYP, sector, ptr, ns)) {
+      return sdError(SD_CARD_ERROR_CMD17);
+  }
+  return true;
+}
+//------------------------------------------------------------------------------
 bool SdioCard::writeStart(uint32_t sector) {
   if (yieldTimeout(isBusyCMD13)) {
     return sdError(SD_CARD_ERROR_CMD13);
@@ -1085,4 +1193,141 @@ bool SdioCard::writeStart(uint32_t sector) {
 bool SdioCard::writeStop() {
   return transferStop();
 }
+//------------------------------------------------------------------------------
+
+
+
+
+static bool sectorsReadWriteNonBlocking(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n) {  
+  if (waitTimeout(isBusyCommandInhibit)) {
+    return false;  // Caller will set errorCode.
+  }
+
+  uint32_t* temp = (uint32_t *)(uint32_t)buf;                                                           // 4 Bytes aligned pointer 
+
+  if(!SetAdma2TableConfig(HostDmaBuffer, ADMA2_DESCRIPTOR_BUFFER_SIZE, temp, (n * 512))) return false;  // Configure ADMA descriptor(s)
+ 
+
+  admaEnable(true);                                                                                     // Enable and select Adma
+  SDHC_IRQSIGEN |= SDHC_IRQSIGEN_MASK;                                          // Enable interrupts Signal
+  SDHC_BLKATTR = SDHC_BLKATTR_BLKSIZE(512) | SDHC_BLKATTR_BLKCNT(n);
+  if(!cardCommand(xfertyp, sector)) {
+    //Serial.println("Error command");
+    return false;
+  }
+  return true;
+}
+
+static bool rdWrSectors(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n) {
+  if ((3 & (uint32_t)buf) || n == 0) {
+    return sdError(SD_CARD_ERROR_DMA);
+  }
+
+  if(isAdma) {
+    while(!waitDmaStatus()) {}
+    setIsAdma(false);
+  }
+
+  if (yieldTimeout(isBusyCMD13)) {
+    return sdError(SD_CARD_ERROR_CMD13);
+  }
+  enableDmaIrs();
+  admaEnable(false);
+  SDHC_DSADDR  = (uint32_t)buf;
+  SDHC_BLKATTR = SDHC_BLKATTR_BLKCNT(n) | SDHC_BLKATTR_BLKSIZE(512);
+  SDHC_IRQSIGEN = SDHC_IRQSIGEN_MASK;
+  if (!cardCommand(xfertyp, m_highCapacity ? sector : 512*sector)) {
+    return false;
+  }
+  return waitDmaStatus();
+}
+
+static bool rdWrSectorsNonBlocking(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n) {
+  if ((3 & (uint32_t)buf) || n == 0) {
+    return sdError(SD_CARD_ERROR_DMA);
+  }
+  //Serial.print("Buffer aligned\t");
+  if(isAdma) {
+    while(!waitDmaStatus()) {}
+    setIsAdma(false);
+  }
+  //Serial.print("ADMA clear\t");
+  if (yieldTimeout(isBusyCMD13)) {
+    return sdError(SD_CARD_ERROR_CMD13);
+  }
+  //Serial.print("Card free\t");
+  enableDmaIrs();
+  if(!sectorsReadWriteNonBlocking(xfertyp, sector, buf, n)) return false;
+  setIsAdma(true);
+  return true;
+}
 #endif  // defined(__MK64FX512__)  defined(__MK66FX1M0__) defined(__IMXRT1062__)
+
+/*
+
+#define SDHC_VENDOR_FRC_SDCLK_ON                    MAKE_REG_MASK(0x1, 8)
+
+#define SDHC_MIX_CTRL_EXE_TUNE                      MAKE_REG_MASK(0x1, 22)
+#define SDHC_MIX_CTRL_AUTO_TUNE_EN                  MAKE_REG_MASK(0x1, 24)
+
+#define SDHC_TUNING_CTRL_DIS_CMD_CHK_FOR_STD_TUNING MAKE_REG_MASK(0x1, 7)
+#define SDHC_TUNING_CTRL_STD_TUNING_EN              MAKE_REG_MASK(0x1, 24)
+
+void USDHC_EnableStandardTuning(uint32_t tuningStartTap, uint32_t step, bool enable)
+{
+    uint32_t tuningCtrl = 0UL;
+
+    if (enable)
+    {
+        feedback clock 
+        SDHC_MIX_CTRL |= USDHC_MIX_CTRL_FBCLK_SEL_MASK;
+        tuningCtrl = base->TUNING_CTRL;
+        tuningCtrl &= ~(USDHC_TUNING_CTRL_TUNING_START_TAP_MASK | USDHC_TUNING_CTRL_TUNING_STEP_MASK);
+        tuningCtrl |= (USDHC_TUNING_CTRL_TUNING_START_TAP(tuningStartTap) | USDHC_TUNING_CTRL_TUNING_STEP(step) |
+                       USDHC_TUNING_CTRL_STD_TUNING_EN_MASK);
+        base->TUNING_CTRL = tuningCtrl;
+
+         excute tuning 
+        base->AUTOCMD12_ERR_STATUS |=
+            (USDHC_AUTOCMD12_ERR_STATUS_EXECUTE_TUNING_MASK | USDHC_AUTOCMD12_ERR_STATUS_SMP_CLK_SEL_MASK);
+    }
+    else
+    {
+        disable the standard tuning 
+        base->TUNING_CTRL &= ~USDHC_TUNING_CTRL_STD_TUNING_EN_MASK;
+        clear excute tuning 
+        base->AUTOCMD12_ERR_STATUS &=
+            ~(USDHC_AUTOCMD12_ERR_STATUS_EXECUTE_TUNING_MASK | USDHC_AUTOCMD12_ERR_STATUS_SMP_CLK_SEL_MASK);
+    }
+}
+
+void sdTuning() {
+  SDHC_SYSCTL |= SDHC_SYSCTL_RSTT;
+  while (SDHC_SYSCTL & SDHC_SYSCTL_RSTT) {}
+  SDHC_VENDOR       |= SDHC_VENDOR_FRC_SDCLK_ON;                                // 2. Set VEND_SPEC[FRC_SDCLK_ON] to 1.
+  SDHC_TUNING_CTRL  |= SDHC_TUNING_CTRL_DIS_CMD_CHK_FOR_STD_TUNING;             // 3. Set TUNING_CTRL[DIS_CMD_CHK_FOR_STD_TUNING] to 1.
+  SDHC_TUNING_CTRL  |= SDHC_TUNING_CTRL_STD_TUNING_EN;                          // 4. Start the tuning procedure by setting TUNING_CTRL[STD_TUNING_EN] and
+  SDHC_MIX_CTRL     |= SDHC_MIX_CTRL_EXE_TUNE;                                  // MIX_CTRL[EXE_TUNE] to 1.
+  //cardCommand();                                                              // 5. Issue CMD19(SD)/ CMD21(eMMC) with the proper Command Transfer Type (CMD_XFR_TYP) and Mixer Control (MIX_CTRL) settings.
+  while (0 == (SDHC_PRSSTAT & SDHC_PRSSTAT_BREN)) {}                            // 6. Wait for uSDHC BRR (Buffer Read Ready) interrupt signal is 1.
+  if(SDHC_MIX_CTRL & SDHC_MIX_CTRL_EXE_TUNE == 0) Serial.println("success");    // 7. Check MIX_CTRL[EXE_TUNE]. If MIX_CTRL[EXE_TUNE] = 1, repeat 5~6. If
+                                                                                // MIX_CTRL[EXE_TUNE] = 0, standard tuning has completed, or the tuning has not
+                                                                                // completed within 40 attempts. The Host Driver might abort this loop if the number of
+                                                                                // loops exceeds 40 or 150ms timeout occurs. In this case, a fixed sampling clock
+                                                                                // should be used, (AUTOCMD12_ERR_STATUS[SMP_CLK_SEL] = 0).
+                                                                                // 7. Check MIX_CTRL[EXE_TUNE]. If MIX_CTRL[EXE_TUNE] = 1, repeat 5~6. If
+                                                                                // MIX_CTRL[EXE_TUNE] = 0, standard tuning has completed, or the tuning has not
+                                                                                // completed within 40 attempts. The Host Driver might abort this loop if the number of
+                                                                                // loops exceeds 40 or 150ms timeout occurs. In this case, a fixed sampling clock
+                                                                                // should be used, (AUTOCMD12_ERR_STATUS[SMP_CLK_SEL] = 0).
+                                                                                // 8. Sampling Clock Select, AUTOCMD12_ERR_STATUS[SMP_CLK_SEL] , is valid
+                                                                                // after MIX_CTRL[EXE_TUNE] has changed from 1 to 0.
+                                                                                // AUTOCMD12_ERR_STATUS[SMP_CLK_SEL] = 1, indicates tuning procedure
+                                                                                // passed. AUTOCMD12_ERR_STATUS[SMP_CLK_SEL] = 0, indicates tuning
+                                                                                // procedure failed. The tuning result is applied to the delay chain, CLK Tuning Control
+                                                                                // and Status (CLK_TUNE_CTRL_STATUS) [30:16], upon successful tuning
+                                                                                // procedure completion.
+  SDHC_VENDOR       &= ~SDHC_VENDOR_FRC_SDCLK_ON;                               // 9. Clear VEND_SPEC[FRC_SDCLK_ON].
+  SDHC_MIX_CTRL     |= SDHC_MIX_CTRL_AUTO_TUNE_EN;                              // 10. Set MIX_CTRL[AUTO_TUNE_EN] to 1.
+}
+*/

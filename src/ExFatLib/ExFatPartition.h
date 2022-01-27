@@ -113,6 +113,12 @@ class ExFatPartition {
    * \return true if busy else false.
    */
   bool isBusy() {return m_blockDev->isBusy();}
+  /**
+   * Check for FsBlockDevice ADMA busy.
+   *
+   * \return true if busy else false.
+   */
+  bool isBusyAdma() {return m_blockDev->isBusyAdma();}
   /** \return the root directory start cluster number. */
   uint32_t rootDirectoryCluster() const {return m_rootDirectoryCluster;}
   /** \return the root directory length. */

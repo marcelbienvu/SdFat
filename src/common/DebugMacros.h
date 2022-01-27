@@ -27,7 +27,7 @@
 #include "SysCall.h"
 
 // 0 - disable, 1 - fail, halt 2 - fail, halt, warn
-#define USE_DBG_MACROS 0
+#define USE_DBG_MACROS 1
 
 #if USE_DBG_MACROS
 #include "Arduino.h"

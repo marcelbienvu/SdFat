@@ -29,6 +29,8 @@
 
 #define FIFO_SDIO 0
 #define DMA_SDIO 1
+#define ADMA2_SDIO 2
+
 /**
  * \class SdioConfig
  * \brief SDIO card configuration.
@@ -45,6 +47,7 @@ class SdioConfig {
   uint8_t options() {return m_options;}
   /** \return true if DMA_SDIO. */
   bool useDma() {return m_options & DMA_SDIO;}
+  bool useAdma() {return m_options & ADMA2_SDIO;}
  private:
   uint8_t m_options = FIFO_SDIO;
 };
@@ -95,6 +98,12 @@ class SdioCard : public SdCardInterface {
    * \return true if busy else false.
    */
   bool isBusy();
+  /**
+   * Check for busy ADMA transfer.
+   *
+   * \return true if busy else false.
+   */
+  bool isBusyAdma();
   /** \return the SD clock frequency in kHz. */
   uint32_t kHzSdClk();
   /**
@@ -114,6 +123,23 @@ class SdioCard : public SdCardInterface {
    * \return true for success or false for failure.
    */
   bool readSectors(uint32_t sector, uint8_t* dst, size_t ns);
+  /**
+   * Non-Blocking Read a 512 byte sector from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorNonBlocking(uint32_t sector, uint8_t* dst);
+  /**
+   * Non-Blocking Read multiple 512 byte sectors from an SD card.
+   *
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
   /**
    * Read a card's CID register. The CID contains card identification
    * information such as Manufacturer ID, Product name, Product serial
@@ -211,6 +237,23 @@ class SdioCard : public SdCardInterface {
    * \return true for success or false for failure.
    */
   bool writeSectors(uint32_t sector, const uint8_t* src, size_t ns);
+  /**
+   * Non-Blocking Writes a 512 byte sector to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorNonBlocking(uint32_t sector, const uint8_t* src);
+  /**
+   * Non Blocking Write multiple 512 byte sectors to an SD card.
+   *
+   * \param[in] sector Logical sector to be written.
+   * \param[in] ns Number of sectors to be written.
+   * \param[in] src Pointer to the location of the data to be written.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);
   /** Write one data sector in a multiple sector write sequence.
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.

@@ -253,7 +253,8 @@
 #define SDHC_VENDOR       (USDHC1_VEND_SPEC) // Vendor Specific register
 #define SDHC_MMCBOOT      (USDHC1_MMC_BOOT) // MMC Boot register
 #define SDHC_VENDOR2    (USDHC2_VEND_SPEC2) // Vendor Specific2 register
-//
+#define SDHC_TUNING_CTRL (USDHC1_TUNING_CTRL) // Tuning register
+
 #define IRQ_SDHC    IRQ_SDHC1
 
 #define SDHC_MAX_DVS (0xF + 1U)

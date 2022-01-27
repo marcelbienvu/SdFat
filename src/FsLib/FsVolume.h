@@ -133,6 +133,15 @@ class FsVolume {
     return m_fVol ? m_fVol->isBusy() :
            m_xVol ? m_xVol->isBusy() : false;
   }
+  /**
+   * Check for ADMA device busy.
+   *
+   * \return true if busy else false.
+   */
+  bool isBusyAdma() {
+    return m_fVol ? m_fVol->isBusyAdma() :
+           m_xVol ? m_xVol->isBusyAdma() : false;
+  }
   /** List directory contents.
    *
    * \param[in] pr Print object.
