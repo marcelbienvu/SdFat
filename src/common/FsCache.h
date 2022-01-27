@@ -64,12 +64,13 @@ class FsCache {
    * \param[out] dst Pointer to the location that will receive the data.
    * \return true for success or false for failure.
    */
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst) {
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, uint8_t mode = 0) {
     if (isCached(sector)) {
       memcpy(dst, m_buffer, 512);
       return true;
     }
-    return m_blockDev->readSectorNonBlocking(sector, dst);
+    return m_blockDev->readSectorParametric(sector, dst, mode);
+    //return m_blockDev->readSectorNonBlocking(sector, dst);
     //return m_blockDev->readSector(sector, dst);
   }
   /**
@@ -80,11 +81,12 @@ class FsCache {
    * \param[out] dst Pointer to the location that will receive the data.
    * \return true for success or false for failure.
    */
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count) {
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count, uint8_t mode = 0) {
     if (isCached(sector, count) && !sync()) {
       return false;
     }
-    return m_blockDev->readSectorsNonBlocking(sector, dst, count);
+    return m_blockDev->readSectorsParametric(sector, dst, count, mode);
+    //return m_blockDev->readSectorsNonBlocking(sector, dst, count);
     //return m_blockDev->readSectors(sector, dst, count);
   }
   /**
@@ -94,11 +96,12 @@ class FsCache {
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.
    */
-  bool cacheSafeWrite(uint32_t sector, const uint8_t* src) {
+  bool cacheSafeWrite(uint32_t sector, const uint8_t* src, uint8_t mode = 0) {
     if (isCached(sector)) {
       invalidate();
     }
-    return m_blockDev->writeSectorNonBlocking(sector, src);
+    return m_blockDev->writeSectorParametric(sector, src, mode);
+    //return m_blockDev->writeSectorNonBlocking(sector, src);
     //return m_blockDev->writeSector(sector, src);
   }
   /**
@@ -109,11 +112,12 @@ class FsCache {
    * \param[in] count Number of sectors to be written.
    * \return true for success or false for failure.
    */
-  bool cacheSafeWrite(uint32_t sector, const uint8_t* src, size_t count) {
+  bool cacheSafeWrite(uint32_t sector, const uint8_t* src, size_t count, uint8_t mode = 0) {
      if (isCached(sector, count)) {
       invalidate();
     }
-    return m_blockDev->writeSectorsNonBlocking(sector, src, count);
+    return m_blockDev->writeSectorsParametric(sector, src, count, mode);
+    //return m_blockDev->writeSectorsNonBlocking(sector, src, count);
     //return m_blockDev->writeSectors(sector, src, count);
   }
   /** \return Clear the cache and returns a pointer to the cache. */

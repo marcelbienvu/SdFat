@@ -928,6 +928,36 @@ bool SdioCard::readSectors(uint32_t sector, uint8_t* dst, size_t n) {
   return true;
 }
 //------------------------------------------------------------------------------
+bool SdioCard::readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSector(sector, dst);
+  case DMA:
+    return readSector(sector, dst);
+  case ADMA:
+    return readSectorNonBlocking(sector, dst);
+  default:
+    return readSector(sector, dst);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool SdioCard::readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSectors(sector, dst, ns);
+  case DMA:
+    return readSectors(sector, dst, ns);
+  case ADMA:
+    return readSectorsNonBlocking(sector, dst, ns);
+  default:
+    return readSectors(sector, dst, ns);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
 bool SetAdma2TableConfig(uint32_t *table, uint32_t tableWords, const uint32_t *data, uint32_t dataBytes) {
     const uint32_t *startAddress = data;
     uint32_t entries;
@@ -1170,6 +1200,7 @@ bool SdioCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size
   }
   return true;
 }
+
 //------------------------------------------------------------------------------
 bool SdioCard::writeStart(uint32_t sector) {
   if (yieldTimeout(isBusyCMD13)) {
@@ -1194,10 +1225,36 @@ bool SdioCard::writeStop() {
   return transferStop();
 }
 //------------------------------------------------------------------------------
-
-
-
-
+bool SdioCard::writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSector(sector, src);
+  case DMA:
+    return writeSector(sector, src);
+  case ADMA:
+    return writeSectorNonBlocking(sector, src);
+  default:
+    return writeSector(sector, src);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool SdioCard::writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSectors(sector, src, ns);
+  case DMA:
+    return writeSectors(sector, src, ns);
+  case ADMA:
+    return writeSectorsNonBlocking(sector, src, ns);
+  default:
+    return writeSectors(sector, src, ns);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
 static bool sectorsReadWriteNonBlocking(uint32_t xfertyp, uint32_t sector, uint8_t* buf, size_t n) {  
   if (waitTimeout(isBusyCommandInhibit)) {
     return false;  // Caller will set errorCode.

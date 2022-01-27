@@ -194,16 +194,16 @@ class ExFatPartition {
   bool syncDevice() {
     return m_blockDev->syncDevice();
   }
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst) {
-    return m_dataCache.cacheSafeRead(sector, dst);
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, uint8_t mode) {
+    return m_dataCache.cacheSafeRead(sector, dst, mode);
   }
   bool cacheSafeWrite(uint32_t sector, const uint8_t* src) {
     return m_dataCache.cacheSafeWrite(sector, src);
   }
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count) {
-    return m_dataCache.cacheSafeRead(sector, dst, count);
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count, uint8_t mode) {
+    return m_dataCache.cacheSafeRead(sector, dst, count, mode);
   }
-  bool cacheSafeWrite(uint32_t sector, const uint8_t* src, size_t count) {
+  bool cacheSafeWrite(uint32_t sector, const uint8_t* src, size_t count, uint8_t mode = 0) {
      return m_dataCache.cacheSafeWrite(sector, src, count);
   }
   bool readSector(uint32_t sector, uint8_t* dst) {

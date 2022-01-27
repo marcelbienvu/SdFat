@@ -714,9 +714,9 @@ class FatFile {
    * \return For success read returns the next byte in the file as an int.
    * If an error occurs or end of file is reached -1 is returned.
    */
-  int read() {
+  int read(uint8_t mode = 0) {
     uint8_t b;
-    return read(&b, 1) == 1 ? b : -1;
+    return read(&b, 1, mode) == 1 ? b : -1;
   }
   /** Read data from a file starting at the current position.
    *
@@ -729,7 +729,7 @@ class FatFile {
    * if end of file is reached.
    * If an error occurs, read() returns -1.
    */
-  int read(void* buf, size_t count);
+  int read(void* buf, size_t count, uint8_t mode = 0);
   /** Read the next directory entry from a directory file.
    *
    * \param[out] dir The DirFat_t struct that will receive the data.
@@ -901,15 +901,15 @@ class FatFile {
    * Use getWriteError to check for errors.
    * \return count of characters written for success or -1 for failure.
    */
-  size_t write(const char* str) {
-    return write(str, strlen(str));
+  size_t write(const char* str, uint8_t mode = 0) {
+    return write(str, strlen(str), mode);
   }
   /** Write a single byte.
    * \param[in] b The byte to be written.
    * \return +1 for success or -1 for failure.
    */
-  size_t write(uint8_t b) {
-    return write(&b, 1);
+  size_t write(uint8_t b, uint8_t mode = 0) {
+    return write(&b, 1, mode);
   }
   /** Write data to an open file.
    *
@@ -924,7 +924,7 @@ class FatFile {
    * \a count.  If an error occurs, write() returns zero and writeError is set.
    *
    */
-  size_t write(const void* buf, size_t count);
+  size_t write(const void* buf, size_t count, uint8_t mode = 0);
 //------------------------------------------------------------------------------
 #if ENABLE_ARDUINO_SERIAL
   /** List directory contents.

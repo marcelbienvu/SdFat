@@ -457,6 +457,35 @@ bool SharedSpiCard::readSectorNonBlocking(uint32_t sector, uint8_t* dst) {
 bool SharedSpiCard::readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) {
   return readSectors(sector, dst, ns); //not implemented
 }
+bool SharedSpiCard::readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSector(sector, dst);
+  case DMA:
+    return readSector(sector, dst);
+  case ADMA:
+    return readSectorNonBlocking(sector, dst);
+  default:
+    return readSector(sector, dst);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool SharedSpiCard::readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSectors(sector, dst, ns);
+  case DMA:
+    return readSectors(sector, dst, ns);
+  case ADMA:
+    return readSectorsNonBlocking(sector, dst, ns);
+  default:
+    return readSectors(sector, dst, ns);
+  }
+  return false;
+}
 //------------------------------------------------------------------------------
 bool SharedSpiCard::readStart(uint32_t sector) {
   if (type() != SD_CARD_TYPE_SDHC) {
@@ -649,6 +678,36 @@ bool SharedSpiCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src,
   return writeSectors(sector, src, ns); // not implemented
 }
 //------------------------------------------------------------------------------
+bool SharedSpiCard::writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSector(sector, src);
+  case DMA:
+    return writeSector(sector, src);
+  case ADMA:
+    return writeSectorNonBlocking(sector, src);
+  default:
+    return writeSector(sector, src);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool SharedSpiCard::writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSectors(sector, src, ns);
+  case DMA:
+    return writeSectors(sector, src, ns);
+  case ADMA:
+    return writeSectorsNonBlocking(sector, src, ns);
+  default:
+    return writeSectors(sector, src, ns);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
 bool SharedSpiCard::writeStart(uint32_t sector) {
   // use address if not SDHC card
   if (type() != SD_CARD_TYPE_SDHC) {
@@ -720,6 +779,35 @@ bool DedicatedSpiCard::readSectorNonBlocking(uint32_t sector, uint8_t* dst) {
 bool DedicatedSpiCard::readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) {
   return readSectors(sector, dst, ns); //not implemented
 }
+bool DedicatedSpiCard::readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSector(sector, dst);
+  case DMA:
+    return readSector(sector, dst);
+  case ADMA:
+    return readSectorNonBlocking(sector, dst);
+  default:
+    return readSector(sector, dst);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return readSectors(sector, dst, ns);
+  case DMA:
+    return readSectors(sector, dst, ns);
+  case ADMA:
+    return readSectorsNonBlocking(sector, dst, ns);
+  default:
+    return readSectors(sector, dst, ns);
+  }
+  return false;
+}
 //------------------------------------------------------------------------------
 bool DedicatedSpiCard::setDedicatedSpi(bool value) {
   if (!syncDevice()) {
@@ -762,4 +850,34 @@ bool DedicatedSpiCard::writeSectorNonBlocking(uint32_t sector, const uint8_t* sr
 //------------------------------------------------------------------------------
 bool DedicatedSpiCard::writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) {
   return writeSectors(sector, src, ns); // Not implemented 
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSector(sector, src);
+  case DMA:
+    return writeSector(sector, src);
+  case ADMA:
+    return writeSectorNonBlocking(sector, src);
+  default:
+    return writeSector(sector, src);
+  }
+  return false;
+}
+//------------------------------------------------------------------------------
+bool DedicatedSpiCard::writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode) {
+  switch (mode) 
+  {
+  case FIFO:
+    return writeSectors(sector, src, ns);
+  case DMA:
+    return writeSectors(sector, src, ns);
+  case ADMA:
+    return writeSectorsNonBlocking(sector, src, ns);
+  default:
+    return writeSectors(sector, src, ns);
+  }
+  return false;
 }

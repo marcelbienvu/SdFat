@@ -206,11 +206,11 @@ class FatPartition {
   uint32_t m_rootDirStart;            // Start sector FAT16, cluster FAT32.
   //----------------------------------------------------------------------------
   // sector I/O functions.
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst) {
-    return m_cache.cacheSafeRead(sector, dst);
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, uint8_t mode) {
+    return m_cache.cacheSafeRead(sector, dst, mode);
   }
-  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count) {
-    return m_cache.cacheSafeRead(sector, dst, count);
+  bool cacheSafeRead(uint32_t sector, uint8_t* dst, size_t count, uint8_t mode) {
+    return m_cache.cacheSafeRead(sector, dst, count, mode);
   }
   bool cacheSafeWrite(uint32_t sector, const uint8_t* dst) {
     return m_cache.cacheSafeWrite(sector, dst);

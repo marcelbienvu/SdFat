@@ -186,6 +186,26 @@ class SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode);  
   /** Start a read multiple sector sequence.
    *
    * \param[in] sector Address of first sector in sequence.
@@ -194,7 +214,7 @@ class SharedSpiCard {
    * multiple sector reads.  SPI chipSelect must be low for the entire sequence.
    *
    * \return true for success or false for failure.
-   */
+   */  
   bool readStart(uint32_t sector);
   /** Return the 64 byte card status
    * \param[out] status location for 64 status bytes.
@@ -264,7 +284,7 @@ class SharedSpiCard {
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.
    */
-  bool writeSectorNonBlocking(uint32_t sector, const uint8_t* src);
+  bool writeSectorNonBlocking(uint32_t sector, const uint8_t* dst);
   /**
    * Non Blocking Write multiple 512 byte sectors to an SD card.
    *
@@ -273,7 +293,27 @@ class SharedSpiCard {
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.
    */
-  bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);  
+  bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* dst, size_t ns);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorParametric(uint32_t sector, const uint8_t* dst, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsParametric(uint32_t sector, const uint8_t* dst, size_t ns, uint8_t mode);  
   /** Write one data sector in a multiple sector write sequence.
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.
@@ -437,6 +477,26 @@ class DedicatedSpiCard : public SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode);
   /** Set SPI sharing state
    * \param[in] value desired state.
    * \return true for success else false;
@@ -476,6 +536,26 @@ class DedicatedSpiCard : public SharedSpiCard {
    * \return true for success or false for failure.
    */
   bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode);
 
  private:
   uint32_t m_curSector;

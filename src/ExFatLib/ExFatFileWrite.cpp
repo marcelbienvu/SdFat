@@ -605,7 +605,7 @@ bool ExFatFile::truncate() {
   return false;
 }
 //------------------------------------------------------------------------------
-size_t ExFatFile::write(const void* buf, size_t nbyte) {
+size_t ExFatFile::write(const void* buf, size_t nbyte, uint8_t mode) {
   // convert void* to uint8_t*  -  must be before goto statements
   const uint8_t* src = reinterpret_cast<const uint8_t*>(buf);
   uint8_t* cache;
@@ -718,14 +718,14 @@ size_t ExFatFile::write(const void* buf, size_t nbyte) {
         ns = maxNs;
       }
       n = ns << m_vol->bytesPerSectorShift();
-      if (!m_vol->cacheSafeWrite(sector, src, ns)) {
+      if (!m_vol->cacheSafeWrite(sector, src, ns, mode)) {
          DBG_FAIL_MACRO;
         goto fail;
       }
 #endif  // USE_MULTI_SECTOR_IO
     } else {
       n = m_vol->bytesPerSector();
-      if (!m_vol->cacheSafeWrite(sector, src)) {
+      if (!m_vol->cacheSafeWrite(sector, src, mode)) {
         DBG_FAIL_MACRO;
         goto fail;
       }

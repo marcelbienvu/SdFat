@@ -530,7 +530,7 @@ int ExFatFile::peek() {
   return c;
 }
 //------------------------------------------------------------------------------
-int ExFatFile::read(void* buf, size_t count) {
+int ExFatFile::read(void* buf, size_t count, uint8_t mode) {
   uint8_t* dst = reinterpret_cast<uint8_t*>(buf);
   int8_t fg;
   size_t toRead = count;
@@ -603,7 +603,7 @@ int ExFatFile::read(void* buf, size_t count) {
         ns = maxNs;
       }
       n = ns << m_vol->bytesPerSectorShift();
-     if (!m_vol->cacheSafeRead(sector, dst, ns)) {
+     if (!m_vol->cacheSafeRead(sector, dst, ns, mode)) {
         DBG_FAIL_MACRO;
         goto fail;
       }
@@ -612,7 +612,7 @@ int ExFatFile::read(void* buf, size_t count) {
       //Serial.print("Cache Read Simple\t");
       // read single sector
       n = m_vol->bytesPerSector();
-      if (!m_vol->cacheSafeRead(sector, dst)) {
+      if (!m_vol->cacheSafeRead(sector, dst, mode)) {
         DBG_FAIL_MACRO;
         goto fail;
       }

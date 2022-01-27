@@ -141,6 +141,26 @@ class SdioCard : public SdCardInterface {
    */
   bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns);
   /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode);
+  /**
    * Read a card's CID register. The CID contains card identification
    * information such as Manufacturer ID, Product name, Product serial
    * number and Manufacturing date.
@@ -254,6 +274,26 @@ class SdioCard : public SdCardInterface {
    * \return true for success or false for failure.
    */
   bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode);
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  bool writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode);
   /** Write one data sector in a multiple sector write sequence.
    * \param[in] src Pointer to the location of the data to be written.
    * \return true for success or false for failure.

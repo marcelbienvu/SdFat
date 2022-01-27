@@ -723,7 +723,7 @@ bool FatFile::preAllocate(uint32_t length) {
   return false;
 }
 //------------------------------------------------------------------------------
-int FatFile::read(void* buf, size_t nbyte) {
+int FatFile::read(void* buf, size_t nbyte, uint8_t mode) {
   int8_t fg;
   uint8_t sectorOfCluster = 0;
   uint8_t* dst = reinterpret_cast<uint8_t*>(buf);
@@ -810,7 +810,7 @@ int FatFile::read(void* buf, size_t nbyte) {
         }
       }
       n = ns << m_vol->bytesPerSectorShift();
-      if (!m_vol->cacheSafeRead(sector, dst, ns)) {
+      if (!m_vol->cacheSafeRead(sector, dst, ns, mode)) {
         DBG_FAIL_MACRO;
         goto fail;
       }
@@ -818,7 +818,7 @@ int FatFile::read(void* buf, size_t nbyte) {
     } else {
       // read single sector
       n = m_vol->bytesPerSector();
-      if (!m_vol->cacheSafeRead(sector, dst)) {
+      if (!m_vol->cacheSafeRead(sector, dst, mode)) {
         DBG_FAIL_MACRO;
         goto fail;
       }
@@ -1329,7 +1329,7 @@ bool FatFile::truncate() {
   return false;
 }
 //------------------------------------------------------------------------------
-size_t FatFile::write(const void* buf, size_t nbyte) {
+size_t FatFile::write(const void* buf, size_t nbyte, uint8_t mode) {
   // convert void* to uint8_t*  -  must be before goto statements
   const uint8_t* src = reinterpret_cast<const uint8_t*>(buf);
   uint8_t* pc;

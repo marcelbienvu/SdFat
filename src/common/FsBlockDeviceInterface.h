@@ -34,6 +34,13 @@
  * \class FsBlockDeviceInterface
  * \brief FsBlockDeviceInterface class.
  */
+enum transferMode {
+  FIFO = 0,
+  DMA = 1,
+  ADMA = 2,
+  BLOCKING = FIFO,
+  NON_BLOCKING = ADMA,
+};
 class FsBlockDeviceInterface {
  public:
   virtual ~FsBlockDeviceInterface() {}
@@ -86,6 +93,26 @@ class FsBlockDeviceInterface {
    * \return true for success or false for failure.
    */
   virtual bool readSectorsNonBlocking(uint32_t sector, uint8_t* dst, size_t ns) = 0;
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  virtual bool readSectorParametric(uint32_t sector, uint8_t* dst, uint8_t mode) = 0;
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  virtual bool readSectorsParametric(uint32_t sector, uint8_t* dst, size_t ns, uint8_t mode) = 0;
   /** \return device size in sectors. */
   virtual uint32_t sectorCount() = 0;
 
@@ -129,5 +156,25 @@ class FsBlockDeviceInterface {
    * \return true for success or false for failure.
    */
   virtual bool writeSectorsNonBlocking(uint32_t sector, const uint8_t* src, size_t ns) = 0;
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  virtual bool writeSectorParametric(uint32_t sector, const uint8_t* src, uint8_t mode) = 0;
+  /**
+   * Parametric read function
+   * 
+   * \param[in] sector Logical sector to be read.
+   * \param[in] ns Number of sectors to be read.
+   * \param[out] dst Pointer to the location that will receive the data.
+   * \param[in] mode mode used to read sectors.
+   * \return true for success or false for failure.
+   */
+  virtual bool writeSectorsParametric(uint32_t sector, const uint8_t* src, size_t ns, uint8_t mode) = 0;
 };
 #endif  // FsBlockDeviceInterface_h

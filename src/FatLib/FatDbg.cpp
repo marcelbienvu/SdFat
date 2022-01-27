@@ -183,7 +183,7 @@ void FatFile::dmpFile(print_t* pr, uint32_t pos, size_t n) {
 //------------------------------------------------------------------------------
 bool FatPartition::dmpDirSector(print_t* pr, uint32_t sector) {
   DirFat_t dir[16];
-  if (!cacheSafeRead(sector, reinterpret_cast<uint8_t*>(dir))) {
+  if (!cacheSafeRead(sector, reinterpret_cast<uint8_t*>(dir), BLOCKING)) {
     pr->println(F("dmpDir failed"));
     return false;
   }
@@ -210,7 +210,7 @@ bool FatPartition::dmpRootDir(print_t* pr, uint32_t n) {
 //------------------------------------------------------------------------------
 void FatPartition::dmpSector(print_t* pr, uint32_t sector, uint8_t bits) {
   uint8_t data[FatPartition::m_bytesPerSector];
-  if (!cacheSafeRead(sector, data)) {
+  if (!cacheSafeRead(sector, data, BLOCKING)) {
     pr->println(F("dmpSector failed"));
     return;
   }
